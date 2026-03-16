@@ -1,15 +1,25 @@
 ################################################################################
-# modules/vpc/outputs.tf
+
+# Outputs
+
 ################################################################################
 
 output "vpc_id" {
-  value = aws_vpc.main.id
+description = "VPC ID"
+value       = aws_vpc.main.id
 }
 
 output "public_subnet_ids" {
-  value = aws_subnet.public[*].id
+description = "Public subnet IDs"
+value       = aws_subnet.public[*].id
 }
 
 output "private_subnet_ids" {
-  value = aws_subnet.private[*].id
+description = "Private subnet IDs"
+value       = aws_subnet.private[*].id
+}
+
+output "vpc_cidr" {
+description = "VPC CIDR"
+value       = aws_vpc.main.cidr_block
 }
