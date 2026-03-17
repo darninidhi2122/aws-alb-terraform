@@ -1,0 +1,106 @@
+Perfect — now I’ll give you a FREE-TIER SAFE, END-TO-END SETUP (no unnecessary cost traps 💸) for:
+👉 Route53 → ALB → EKS → Nginx (Ingress setup)
+This will be:
+Step-by-step
+Optimized for minimum cost
+Safe for assignment + demo
+
+step 1: configure AWS cli
+aws configure
+enter: Access Key
+Secret Key
+Region: ap-south-1
+Output: json
+
+step 2: Create EKS Cluster (LOW COST)
+eksctl create cluster \
+  --name demo-eks \
+  --region ap-south-1 \
+  --nodegroup-name demo-nodes \
+  --node-type t3.small \
+  --nodes 1 \
+  --nodes-min 1 \
+  --nodes-max 1 \
+  --managed
+  takes 15-20 mins
+  verfiy: kubectl get nodes
+  
+  COST OPTIMIZATION TIP
+  after cluster creation:
+  kubectl scale deployment coredns -n kube-system --replicas=1
+
+  step 3: enable OIDC
+  eksctl utils associate-iam-oidc-provider \
+  --region ap-south-1 \
+  --cluster demo-eks \
+  --approve
+
+STEP 4: Install AWS Load Balancer Controller
+IAM policy:
+curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+aws iam create-policy \
+  --policy-name AWSLoadBalancerControllerIAMPolicy \
+  --policy-document file://iam_policy.json
+
+  create IAM service account:
+  eksctl create iamserviceaccount \
+  --cluster demo-eks \
+  --namespace kube-system \
+  --name aws-load-balancer-controller \
+  --attach-policy-arn arn:aws:iam::<ACCOUNT-ID>:policy/AWSLoadBalancerControllerIAMPolicy \
+  --approve
+
+  install via helm
+  helm repo add eks https://aws.github.io/eks-charts
+  helm repo update
+
+  helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=demo-eks \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
+
+  verify:
+  kubectl get pods -n kube-system
+
+  now add manifest files of the application you want to deploy
+  you need a deployment yaml service yaml and ingress yaml and other required yamls
+
+  and apply all those yaml files:
+  kubectl apply -f .
+
+  check: kubectl get ingress
+
+  
+STEP 8: Configure Route53
+ Create Hosted Zone
+
+In AWS → Route53
+Create:
+
+yourdomain.com
+
+Update GoDaddy
+
+👉 Replace nameservers with Route53 ones
+Create Record
+
+Type: A
+
+Alias: YES
+
+Target: ALB
+
+step 9: test
+
+http://yourdomain.com
+
+step 10: cleanup
+eksctl delete cluster --name demo-eks --region us-east-1
+
+summary:
+Used AWS Load Balancer Controller
+ALB auto-created via Ingress
+Route53 mapped domain to ALB
+Used ClusterIP service
+Achieved Layer 7 routing
